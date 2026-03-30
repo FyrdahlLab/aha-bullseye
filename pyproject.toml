@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aha-bullseye"
+version = "0.1.0"
+description = "AHA 16/17-segment bulls-eye plotting"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["AHA", "bullseye", "cardiac", "plot", "matplotlib"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "numpy>=1.22",
+  "matplotlib>=3.6",
+]
+
+[tool.setuptools]
+packages = ["bullseye"]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+bullseye = ["py.typed"]
