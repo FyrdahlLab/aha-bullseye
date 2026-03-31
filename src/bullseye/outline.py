@@ -15,8 +15,6 @@ def bullseye_outline(
     *,
     color: str = DEFAULT_OUTLINE_COLOR,
     linewidth: float = DEFAULT_OUTLINE_LINEWIDTH,
-    theta_samples: int = 720,
-    radius_samples: int = 240,
 ):
     """Draw a closed outline around selected AHA segments."""
     segment_count = infer_segment_count(ax)
@@ -31,8 +29,8 @@ def bullseye_outline(
         )
 
     # Pad one extra column past 2π so contours close across the 0/2π seam.
-    thetas = np.linspace(0.0, 2.0 * math.pi, theta_samples + 1)
-    radii_base = np.linspace(0.0, 1.0, radius_samples)
+    thetas = np.linspace(0.0, 2.0 * math.pi, 721)
+    radii_base = np.linspace(0.0, 1.0, 240)
     radii = np.concatenate([radii_base, [1.0 + 1e-3]])
     Theta, R = np.meshgrid(thetas, radii)
 
