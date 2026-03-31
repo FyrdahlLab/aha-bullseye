@@ -3,6 +3,7 @@ from typing import Mapping, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from matplotlib.colors import ListedColormap
 import numpy as np
 
 from .layout import BULLSEYE_SEGMENT_COUNT_ATTR, ring_bounds, validate_segment_count
@@ -20,7 +21,7 @@ def bullseye(
     values: Sequence[Union[float, None]],
     *,
     ax=None,
-    cmap: Union[str, colors.Colormap, None] = None,
+    cmap: Union[str, colors.Colormap, list, None] = None,
     norm: Union[colors.Normalize, None] = None,
     vmin: Union[float, None] = None,
     vmax: Union[float, None] = None,
@@ -173,6 +174,8 @@ def _label_position(*, j: int, width: float, r0: float, r1: float, is_apex_ring:
 def _resolve_cmap(*, cmap, center: Union[float, None]):
     if cmap is None:
         cmap = DEFAULT_DIVERGING_CMAP if center is not None else DEFAULT_SEQUENTIAL_CMAP
+    if isinstance(cmap, list):
+        return ListedColormap(cmap)
     if isinstance(cmap, str):
         return plt.get_cmap(cmap)
     return cmap
