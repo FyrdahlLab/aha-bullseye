@@ -31,7 +31,6 @@ def bullseye(
     fmt: str = ".1f",
     annot_kws: Union[Mapping[str, object], None] = None,
     show_segment_ids: bool = False,
-    show_labels: Union[bool, None] = None,
     fontsize: int = DEFAULT_ANNOT_FONTSIZE,
     missing_color=DEFAULT_MISSING_COLOR,
     cbar: bool = False,
@@ -44,11 +43,6 @@ def bullseye(
     figsize: Tuple[float, float] = (4.0, 4.0),
 ):
     validate_segment_count(len(values))
-    if show_labels is not None:
-        if annot is not False:
-            raise ValueError("pass either annot or show_labels, not both")
-        annot = show_labels
-
     cmap = _resolve_cmap(cmap=cmap, center=center)
     norm = _resolve_norm(
         values=values,
