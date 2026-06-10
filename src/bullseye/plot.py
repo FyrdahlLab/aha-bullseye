@@ -3,10 +3,14 @@ from typing import Mapping, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
+from matplotlib.axes import Axes
 from matplotlib.colors import ListedColormap
+from matplotlib.projections.polar import PolarAxes
 import numpy as np
 
 from .layout import BULLSEYE_SEGMENT_COUNT_ATTR, ring_bounds, validate_segment_count
+
+ColorType = Union[str, Tuple[float, float, float], Tuple[float, float, float, float]]
 
 DEFAULT_SEQUENTIAL_CMAP = "viridis"
 DEFAULT_DIVERGING_CMAP = "coolwarm"
@@ -20,7 +24,7 @@ DEFAULT_WALL_LABEL_FONTSIZE = 8
 def bullseye(
     values: Sequence[Union[float, None]],
     *,
-    ax=None,
+    ax: Union[PolarAxes, None] = None,
     cmap: Union[str, colors.Colormap, list, None] = None,
     norm: Union[colors.Normalize, None] = None,
     vmin: Union[float, None] = None,
@@ -32,16 +36,72 @@ def bullseye(
     annot_kws: Union[Mapping[str, object], None] = None,
     show_segment_ids: bool = False,
     fontsize: int = DEFAULT_ANNOT_FONTSIZE,
-    missing_color=DEFAULT_MISSING_COLOR,
+    missing_color: ColorType = DEFAULT_MISSING_COLOR,
     cbar: bool = False,
-    cbar_ax=None,
+    cbar_ax: Union[Axes, None] = None,
     cbar_kws: Union[Mapping[str, object], None] = None,
-    linecolor=DEFAULT_LINECOLOR,
+    linecolor: Union[ColorType, None] = DEFAULT_LINECOLOR,
     linewidths: float = DEFAULT_LINEWIDTHS,
     show_wall_labels: bool = False,
     wall_label_fontsize: int = DEFAULT_WALL_LABEL_FONTSIZE,
     figsize: Tuple[float, float] = (4.0, 4.0),
-):
+) -> PolarAxes:
+    """Draw an AHA 16- or 17-segment bullseye plot.
+
+    Parameters
+    ----------
+    values : sequence of float or None
+        Per-segment values in AHA order (length 16 or 17).
+        None/NaN entries are drawn with ``missing_color``.
+    ax : polar Axes, optional
+        Axes to plot on. Created if not provided.
+    cmap : str, list of colors, or Colormap, optional
+        Defaults to "viridis", or "coolwarm" when ``center`` is set.
+    norm : Normalize, optional
+        Custom normalization. Mutually exclusive with
+        vmin/vmax/center/robust.
+    vmin, vmax : float, optional
+        Color scale limits. Inferred from data if not set.
+    center : float, optional
+        Midpoint for diverging colormaps. Enables TwoSlopeNorm; must
+        lie strictly between vmin and vmax.
+    robust : bool, default False
+        Use 2nd-98th percentile for color limits.
+    annot : bool or sequence, default False
+        True to label segments with values. A sequence provides
+        custom per-segment labels.
+    fmt : str, default ".1f"
+        Format string for numeric annotations.
+    annot_kws : dict, optional
+        Extra keywords forwarded to ``ax.text``.
+    show_segment_ids : bool, default False
+        Show 1-based AHA segment numbers.
+    fontsize : int, default 7
+        Font size for annotations and segment IDs.
+    missing_color : color, default (0.92, 0.92, 0.92, 1.0)
+        Fill color for None/NaN segments.
+    cbar : bool, default False
+        Add a colorbar.
+    cbar_ax : Axes, optional
+        Pre-existing axes for the colorbar.
+    cbar_kws : dict, optional
+        Extra keywords forwarded to ``figure.colorbar``.
+    linecolor : color, default "white"
+        Color of lines between segments.
+    linewidths : float, default 1.0
+        Width of lines between segments. 0 to hide.
+    show_wall_labels : bool, default False
+        Show Anterior/Septal/Inferior/Lateral labels.
+    wall_label_fontsize : int, default 8
+        Font size for wall labels.
+    figsize : (float, float), default (4.0, 4.0)
+        Figure size in inches. Only used when ``ax`` is None.
+
+    Returns
+    -------
+    PolarAxes
+        The axes the bullseye was drawn on.
+    """
     validate_segment_count(len(values))
     cmap = _resolve_cmap(cmap=cmap, center=center)
     norm = _resolve_norm(
@@ -79,8 +139,10 @@ def bullseye(
                 face = colors.to_rgba(cmap(norm(v)))
 
             is_apex_ring = ring_segment_count == 1
-            edge = face if is_apex_ring else _resolve_edgecolor(face=face, linecolor=linecolor, linewidths=linewidths)
-            lw = 0.0 if is_apex_ring else _resolve_linewidth(linecolor=linecolor, linewidths=linewidths)
+            if is_apex_ring:
+                edge, lw = face, 0.0
+            else:
+                edge, lw = _resolve_segment_edge(face=face, linecolor=linecolor, linewidths=linewidths)
             ax.bar(
                 j * width,
                 r1 - r0,
@@ -211,8 +273,11 @@ def _resolve_norm(
         resolved_vmax = float(vmax)
 
     resolved_vmin, resolved_vmax = _expand_equal_bounds(vmin=resolved_vmin, vmax=resolved_vmax)
-    if not resolved_vmin <= center <= resolved_vmax:
-        raise ValueError("center must lie between vmin and vmax")
+    if not resolved_vmin < center < resolved_vmax:
+        raise ValueError(
+            f"center must lie strictly between vmin and vmax; "
+            f"got center={center} with vmin={resolved_vmin}, vmax={resolved_vmax}"
+        )
     return colors.TwoSlopeNorm(vmin=resolved_vmin, vcenter=center, vmax=resolved_vmax)
 
 
@@ -241,7 +306,9 @@ def _finite_values(values: Sequence[Union[float, None]]) -> np.ndarray:
     for value in values:
         if _is_missing(value):
             continue
-        finite.append(float(value))
+        value = float(value)
+        if math.isfinite(value):
+            finite.append(value)
     return np.asarray(finite, dtype=float)
 
 
@@ -260,9 +327,11 @@ def _resolve_annotations(
     annot: Union[bool, Sequence[object]],
     fmt: str,
 ):
-    if annot is False or annot is None:
+    if annot is None:
         return [None] * len(values)
-    if annot is True:
+    if isinstance(annot, (bool, np.bool_)):
+        if not annot:
+            return [None] * len(values)
         return [_format_annotation_value(value=value, fmt=fmt) for value in values]
 
     raw = np.asarray(annot, dtype=object).ravel()
@@ -294,13 +363,7 @@ def _coerce_annotation_text(*, value, fmt: str):
     return str(value)
 
 
-def _resolve_edgecolor(*, face, linecolor, linewidths: float):
+def _resolve_segment_edge(*, face, linecolor, linewidths: float):
     if linewidths <= 0 or linecolor is None:
-        return face
-    return linecolor
-
-
-def _resolve_linewidth(*, linecolor, linewidths: float):
-    if linewidths <= 0 or linecolor is None:
-        return 0.0
-    return linewidths
+        return face, 0.0
+    return linecolor, linewidths

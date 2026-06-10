@@ -35,10 +35,6 @@ def infer_segment_count(ax) -> int:
     if segment_count in VALID_SEGMENT_COUNTS:
         return int(segment_count)
 
-    patch_count = len(getattr(ax, "patches", ()))
-    if patch_count in VALID_SEGMENT_COUNTS:
-        return patch_count
-
     raise ValueError(
         "could not determine bullseye layout from axes; use an axes returned by bullseye()"
     )

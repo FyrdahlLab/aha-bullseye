@@ -20,7 +20,7 @@ bullseye_outline(ax, [2, 3, 8, 9, 14], color="red", linewidth=3.0)
 plt.show()
 ```
 
-Segments follow AHA order: 1-6 basal, 7-12 mid, 13-16 apical, 17 apex. Passing 16 values omit the apex. Returns `ax`, access the figure as `ax.figure`.
+Segments follow AHA order: 1-6 basal, 7-12 mid, 13-16 apical, 17 apex. Passing 16 values omits the apex. Returns `ax`, access the figure as `ax.figure`.
 
 ## Subplots
 
@@ -55,7 +55,8 @@ bullseye(values, ...) → ax
     vmin, vmax : float, optional
         Color scale limits. Inferred from data if not set.
     center : float, optional
-        Midpoint for diverging colormaps. Enables TwoSlopeNorm.
+        Midpoint for diverging colormaps. Enables TwoSlopeNorm;
+        must lie strictly between vmin and vmax.
     robust : bool, default False
         Use 2nd–98th percentile for color limits.
     annot : bool or sequence, default False

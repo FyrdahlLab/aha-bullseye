@@ -1,6 +1,8 @@
 import math
 from typing import Sequence, Union
 
+from matplotlib.contour import QuadContourSet
+from matplotlib.projections.polar import PolarAxes
 import numpy as np
 
 from .layout import infer_segment_count, ring_bounds
@@ -10,17 +12,17 @@ DEFAULT_OUTLINE_LINEWIDTH = 3.0
 
 
 def bullseye_outline(
-    ax,
+    ax: PolarAxes,
     selected_segments: Sequence[Union[int, bool]],
     *,
     color: str = DEFAULT_OUTLINE_COLOR,
     linewidth: float = DEFAULT_OUTLINE_LINEWIDTH,
-):
+) -> Union[QuadContourSet, None]:
     """Draw a closed outline around selected AHA segments."""
     segment_count = infer_segment_count(ax)
     selected = _normalize_selected_segments(selected_segments, segment_count)
     if selected.size == 0:
-        return
+        return None
 
     invalid = np.unique(selected[(selected < 1) | (selected > segment_count)])
     if invalid.size:
